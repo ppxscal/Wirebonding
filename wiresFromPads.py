@@ -8,14 +8,11 @@ import svgwrite
 import math
 import sys
 
-# generate frequency_divid
-
 # tags
 # add extra - double bond to same package pad
 # snap to center
 # pick up either end of wire
 
-# size for fre_divid is 664x664 microns know chip dimensions
 # given which wires are connected to pads and pins, write pins numbered top left
 # as soon as wire is attached, pin name must be known - pin 1 - 12, list names
 # generate pin packaging pinout
@@ -72,25 +69,6 @@ def orientation(p, q, r):
         # Colinear orientation
         return 0
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 # The main function that returns true if
 # the line segment 'p1q1' and 'p2q2' intersect.
 def doIntersect(p1, q1, p2, q2):
@@ -125,8 +103,6 @@ def doIntersect(p1, q1, p2, q2):
 
     # If none of the cases
     return False
-
-
 
 def centerIterator(list):
     result = []
@@ -189,8 +165,6 @@ def release(e):
                 myList = list(tuple)
                 if outputItem[0] in myList:
                     output.coords(outputItem, x0, y0, (box[0] + box[2]) /2, (box[1] + box[3]) /2)
-
-
     except:
         pass
 
@@ -339,11 +313,9 @@ def drawQFN(string, shift, resizeFactor):
                                             center[1] - pinRange / 2 + 250 / resizeFactor + 500 * i / resizeFactor,
                                             fill='silver'))
 
-        # wires.append(
-        # output.create_line(getCenterRect(pins[i])[0], getCenterRect(pins[i])[1], centers[(i + shift)%12][0], centers[(i + shift)%12][1],
-        # fill='red'))
+      
 
-    # bottom
+    # bottom pins
 
     for i in range(numberSide):
         pins.append(output.create_rectangle(center[0] - pinRange / 2 + 500 * i / resizeFactor,
@@ -354,7 +326,7 @@ def drawQFN(string, shift, resizeFactor):
         # getCenterRect((pins[i + numberSide]))[0], getCenterRect(pins[i + numberSide])[1], centers[(i + numberSide + shift)%12][0],
         # centers[(i + numberSide + shift)%12][1], fill='red'))
 
-    # right
+    # right pins
     for i in range(numberSide):
         pins.append(output.create_rectangle(center[0] + pinRange / 2 + 1000 / resizeFactor,
                                             center[1] + pinRange / 2 - 500 * i / resizeFactor,
@@ -366,7 +338,7 @@ def drawQFN(string, shift, resizeFactor):
         # centers[(i + 2 * numberSide + shift)%12][0],
         # centers[(i + 2 * numberSide + shift)%12][1], fill='red'))
 
-    # top
+    # top pins
 
     for i in range(numberSide):
         pins.append(output.create_rectangle(center[0] + pinRange / 2 - 500 * i / resizeFactor,
@@ -374,6 +346,12 @@ def drawQFN(string, shift, resizeFactor):
                                             center[0] + pinRange / 2 - 250 / resizeFactor - 500 * i / resizeFactor,
                                             center[1] - pinRange / 2 - 500 / resizeFactor, fill='silver'))
 
+        
+        
+        
+        
+    #Make array refereces by top down orientation: left bottom right top - also order in whih pins are generated 
+    
     left = []
     bottom = []
     right = []
@@ -395,11 +373,16 @@ def drawQFN(string, shift, resizeFactor):
             top.append(i)
         if getCenterRect(i)[1] == min(yArray):
             bottom.append(i)
+            
+    # Iterates through a list from the center outwards symmetrictly
+    # list 1,2,3,4,5 would return 3,4,2,5,1
 
     left = centerIterator(left)
     bottom = centerIterator(bottom)
     right = centerIterator(right)
     top = centerIterator(top)
+    
+    #initially draws wires finding the closest availiable pin
 
     def drawWires(pads):
         for i in pads:
@@ -442,14 +425,13 @@ def drawQFN(string, shift, resizeFactor):
                 output.coords(i, x0, y0, x11, y11)
                 output.coords(j, x01, y01, x1, y1)
 
-
-###############################################################################33
     for i in wires:
         checkCrossover(i)
     for i in wires:
         checkCrossover(i)
-
-    print(takenPins)
+        
+     # code to shift pins over to empty pins to make room for others
+     # doesnt quite work yet
 
     for i in reversed(pins):
         centerCoorPin = getCenterRect(i)
