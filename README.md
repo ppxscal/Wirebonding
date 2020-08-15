@@ -1,2 +1,2 @@
 # Wirebonding
-An application to generate wirebond diagram for chip packages
+An application to generate wirebond diagrams for chip packages
