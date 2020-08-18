@@ -3,16 +3,21 @@ import readLef as lef
 from tkinter import ttk
 from tkinter import filedialog
 from PIL import ImageTk, Image, ImageGrab
-from resizeimage import resizeimage
+#import resizeimage
 import svgwrite
 import math
 import sys
+sys.path.insert(1, 'C:/Users/pasca/Desktop/Projects/Wirebonding/canvas2svg-master')
+import canvasvg
+
+# generate frequency_divid
 
 # tags
 # add extra - double bond to same package pad
 # snap to center
 # pick up either end of wire
 
+# size for fre_divid is 664x664 microns know chip dimensions
 # given which wires are connected to pads and pins, write pins numbered top left
 # as soon as wire is attached, pin name must be known - pin 1 - 12, list names
 # generate pin packaging pinout
@@ -69,6 +74,7 @@ def orientation(p, q, r):
         # Colinear orientation
         return 0
 
+
 # The main function that returns true if
 # the line segment 'p1q1' and 'p2q2' intersect.
 def doIntersect(p1, q1, p2, q2):
@@ -103,6 +109,7 @@ def doIntersect(p1, q1, p2, q2):
 
     # If none of the cases
     return False
+
 
 def centerIterator(list):
     result = []
@@ -147,27 +154,53 @@ def moveLine(e):
     except:
         pass
 
-    if outputItem[0] in wires:
-        output.coords(outputItem, x0, y0, output.canvasx(e.x), output.canvasy(e.y))
-        output.itemconfig(outputItem, fill='blue')
-
-
-def release(e):
-    outputItem = output.find_withtag('current')
-    x0, y0, x1, y1 = output.coords(outputItem)
     try:
+
         if outputItem[0] in wires:
-            output.itemconfig(outputItem, fill='red')
-            whichPin = None
-            for i in pins:
-                box = output.bbox(i)
-                tuple = output.find_overlapping(box[0], box[1], box[2], box[3])
-                myList = list(tuple)
-                if outputItem[0] in myList:
-                    output.coords(outputItem, x0, y0, (box[0] + box[2]) /2, (box[1] + box[3]) /2)
+            if (abs(output.canvas(e.x) - x0) + abs(output.canvas(e.y - y0)) >= (abs(output.canvas(e.x) - x1) + abs(output.canvas(e.y - y1)))):
+                    output.coords(outputItem,output.canvasx(e.x), output.canvasy(e.y), x1, y1)
+                    output.itemconfig(outputItem, fill='blue')
+                    print("inside")
+                    
+            else:
+                output.coords(outputItem, x0, y0, output.canvasx(e.x), output.canvasy(e.y))
+                output.itemconfig(outputItem, fill='blue')
+
+                print("outside")
+                
+            
     except:
         pass
 
+
+#output.create_rectangle(center[0] - pinRange / 2,
+#                            center[1] - pinRange / 2,
+#                            center[0] + pinRange / 2,
+#                            center[1] + pinRange / 2, fill='silver')
+
+
+
+
+def release(e):
+
+    try:
+        outputItem = output.find_withtag('current')
+        x0, y0, x1, y1 = output.coords(outputItem)
+        try:
+            if outputItem[0] in wires:
+                output.itemconfig(outputItem, fill='red')
+                whichPin = None
+                for i in pins:
+                    box = output.bbox(i)
+                    tuple = output.find_overlapping(box[0], box[1], box[2], box[3])
+                    myList = list(tuple)
+                    if outputItem[0] in myList:
+                            output.coords(outputItem, x0, y0, (box[0] + box[2]) /2, (box[1] + box[3]) /2)
+
+        except:
+            pass
+    except:
+        pass
 
 def Enter(e):
     clickEntry()
@@ -197,7 +230,8 @@ def CMI(string):
         pins.clear()
         resizeStates.append(int(string.split()[-1]))
         drawQFN(projectNames[-1] + ".lef", 0, int(string.split()[-1]))
-
+    elif "write svg as" in string:
+        canvasvg.saveall(string.split()[-1], output, items=None, margin=10, tounicode=None)
     else:
         text.insert(END, "Error: " + string + " is not a valid command" + "\n")
 
@@ -249,12 +283,13 @@ xscrollbar = ttk.Scrollbar(frame, orient='horizontal')
 xscrollbar.pack(side=BOTTOM, fill=X)
 xscrollbar.config(command=output.xview)
 
-
 def drawQFN(string, shift, resizeFactor):
     global img
     global wires
     global pins
     global takenPins
+    global center
+    global pinRange
     pads = []
     wires = []
     pins = []
@@ -299,7 +334,7 @@ def drawQFN(string, shift, resizeFactor):
 
     # pads
     for i in coordinates:
-        pads.append(output.create_rectangle(i[0], i[1], i[2], i[3]))
+        pads.append(output.create_rectangle(i[0], i[1], i[2], i[3], fill = 'white'))
 
     # creating paddles
     # pin dimensions, .25mm wide, .25mm spacing, .5mm length, .5mm from paddle
@@ -313,9 +348,11 @@ def drawQFN(string, shift, resizeFactor):
                                             center[1] - pinRange / 2 + 250 / resizeFactor + 500 * i / resizeFactor,
                                             fill='silver'))
 
-      
+        # wires.append(
+        # output.create_line(getCenterRect(pins[i])[0], getCenterRect(pins[i])[1], centers[(i + shift)%12][0], centers[(i + shift)%12][1],
+        # fill='red'))
 
-    # bottom pins
+    # bottom
 
     for i in range(numberSide):
         pins.append(output.create_rectangle(center[0] - pinRange / 2 + 500 * i / resizeFactor,
@@ -326,7 +363,7 @@ def drawQFN(string, shift, resizeFactor):
         # getCenterRect((pins[i + numberSide]))[0], getCenterRect(pins[i + numberSide])[1], centers[(i + numberSide + shift)%12][0],
         # centers[(i + numberSide + shift)%12][1], fill='red'))
 
-    # right pins
+    # right
     for i in range(numberSide):
         pins.append(output.create_rectangle(center[0] + pinRange / 2 + 1000 / resizeFactor,
                                             center[1] + pinRange / 2 - 500 * i / resizeFactor,
@@ -338,7 +375,7 @@ def drawQFN(string, shift, resizeFactor):
         # centers[(i + 2 * numberSide + shift)%12][0],
         # centers[(i + 2 * numberSide + shift)%12][1], fill='red'))
 
-    # top pins
+    # top
 
     for i in range(numberSide):
         pins.append(output.create_rectangle(center[0] + pinRange / 2 - 500 * i / resizeFactor,
@@ -346,12 +383,6 @@ def drawQFN(string, shift, resizeFactor):
                                             center[0] + pinRange / 2 - 250 / resizeFactor - 500 * i / resizeFactor,
                                             center[1] - pinRange / 2 - 500 / resizeFactor, fill='silver'))
 
-        
-        
-        
-        
-    #Make array refereces by top down orientation: left bottom right top - also order in whih pins are generated 
-    
     left = []
     bottom = []
     right = []
@@ -373,16 +404,11 @@ def drawQFN(string, shift, resizeFactor):
             top.append(i)
         if getCenterRect(i)[1] == min(yArray):
             bottom.append(i)
-            
-    # Iterates through a list from the center outwards symmetrictly
-    # list 1,2,3,4,5 would return 3,4,2,5,1
 
     left = centerIterator(left)
     bottom = centerIterator(bottom)
     right = centerIterator(right)
     top = centerIterator(top)
-    
-    #initially draws wires finding the closest availiable pin
 
     def drawWires(pads):
         for i in pads:
@@ -393,18 +419,21 @@ def drawQFN(string, shift, resizeFactor):
                 if element in takenPins:
                     distanceToPins[element] = sys.maxsize
             closest = distanceToPins.index(min(distanceToPins))
-            # print(str(closest) + " distance: " + str(distanceToPins[closest]))
+            #print(str(closest) + " distance: " + str(distanceToPins[closest]))
             locI = getCenterRect(i)
             locJ = getCenterRect(pins[closest])
             wires.append(output.create_line(locI[0], locI[1], locJ[0], locJ[1], fill='red'))
             takenPins.append(pins.index(pins[closest]))
             distanceToPins.clear()
+        
 
     drawWires(left)
     drawWires(right)
     drawWires(bottom)
-
     drawWires(top)
+
+    print(len(pads))
+    print(len(wires))
 
     def checkCrossover(i):
         x0, y0, x1, y1 = output.coords(i)
@@ -425,13 +454,14 @@ def drawQFN(string, shift, resizeFactor):
                 output.coords(i, x0, y0, x11, y11)
                 output.coords(j, x01, y01, x1, y1)
 
+
+
     for i in wires:
         checkCrossover(i)
     for i in wires:
         checkCrossover(i)
-        
-     # code to shift pins over to empty pins to make room for others
-     # doesnt quite work yet
+
+    #doesnt quite work 
 
     for i in reversed(pins):
         centerCoorPin = getCenterRect(i)
