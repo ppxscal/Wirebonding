@@ -158,6 +158,9 @@ class vQFN:
         self.right = None
         self.top = None
 
+    def getName(self):
+        return self.string[:-4]
+
     def centralPad(self):
         xArray = []
         yArray = []
@@ -471,12 +474,85 @@ class vQFN:
                                     if math.atan(y / (x + 1)) < math.radians(40):
                                         self.canvas.itemconfig(l, fill="green")
 
+    def shiftWires(self, number):
+
+        alreadyShifted = []
+
+        for i in self.pins:
+            # pinDim = self.canvas.bbox(i)
+
+            pinCenter = self.getCenterRect(i)
+            newPin = self.getCenterRect(
+                self.pins[(self.pins.index(i) + int(number)) % len(self.pins)]
+            )
+
+            wiresWithinPin = list(
+                self.canvas.find_overlapping(
+                    pinCenter[0], pinCenter[1], pinCenter[0], pinCenter[1]
+                )
+            )
+
+            for item in wiresWithinPin:
+                if item not in self.wires or item in alreadyShifted:
+                    wiresWithinPin.remove(item)
+
+            for j in wiresWithinPin:
+                if j in self.wires:
+                    x01, y01, x11, y11 = self.canvas.coords(j)
+                    self.canvas.coords(j, x01, y01, newPin[0], newPin[1])
+                    alreadyShifted.append(j)
+
+            self.checkAngles()
+
+            # self.getCenterRect(self.pins[(self.pins.index(i) + 1) % len(self.pins)])
+
 
 def drawQFN(string, resizeFactor, canvas):
     output.delete("all")
     qfn = vQFN(string + ".lef", resizeFactor, canvas)
 
-    packageMemory.append(qfn)
+    # Outer Rect(Package)
+    qfn.drawOuterRect()
+
+    # paddle
+    qfn.drawPaddle()
+
+    # Inner Rect
+    qfn.drawInnerRect()
+
+    # Mid Rect
+    qfn.drawMidRect()
+
+    # Image
+    qfn.drawImage()
+    # pads
+    qfn.drawPads()
+
+    # pins
+    qfn.drawPinsLeft()
+    qfn.drawPinsBottom()
+    qfn.drawPinsRight()
+    qfn.drawPinsTop()
+
+    # wires
+    qfn.drawWires()
+
+    # Crossover correction
+    for i in qfn.getWires():
+        qfn.checkCrossover(i)
+    for i in qfn.getWires():
+        qfn.checkCrossover(i)
+
+    qfn.checkAngles()
+
+    return qfn
+
+
+def drawBiggerQFN(string, resizeFactor, canvas, pinRange):
+    output.delete("all")
+    qfn = vQFN(string + ".lef", resizeFactor, canvas)
+
+    qfn.changePinRange(pinRange)
 
     # Outer Rect(Package)
     qfn.drawOuterRect()
@@ -628,18 +704,51 @@ def release(e):
         pass
 
 
+def writeImage(string):
+    x = window.winfo_rootx() + output.winfo_rootx()
+    y = window.winfo_rooty() + output.winfo_rooty()
+    x1 = x + output.winfo_width()
+    y1 = y + output.winfo_height()
+    ImageGrab.grab().crop((x, y, x1, y1)).save(string.split()[-1])
+
+
 def CMI(string):
     if "generate" in string:
         output.delete("all")
         packageMemory.append(drawQFN(string.split()[-1], 15, output))
 
-    if "s" in string:
+    elif "save as" in string:
+
+        if "svg" not in string:
+            writeImage(string)
+            text.insert(END, "Image saved successfully" + "\n")
+        else:
+            canvasvg.saveall(
+                string.split()[-1], output, items=None, margin=10, tounicode=None
+            )
+            text.insert(END, "SVG file saved successfully" + "\n")
+
+    elif "a" in string:
         packageMemory[-1].flipSwitch()
         text.insert(END, "Switched wire acnhor" + "\n")
 
-    if "+" in string:
-        packageMemory[-1].changePinRange(int(string.split()[-1]))
-        drawModifiedQFN()
+    elif "+" in string:
+        packageMemory.append(
+            drawBiggerQFN(
+                packageMemory[-1].getName(), 15, output, int(string.split()[-1])
+            )
+        )
+    elif "resize" in string:
+        packageMemory.append(
+            drawQFN(packageMemory[-1].getName(), int(string.split()[-1]), output)
+        )
+    elif "delete" in string:
+        packageMemory[-1].getCanvas().delete(
+            packageMemory[-1].getWires()[int(string.split()[-1])]
+        )
+    elif "shift" in string:
+
+        packageMemory[-1].shiftWires(int(string.split()[-1]))
 
 
 """
@@ -649,27 +758,15 @@ def CMI(string):
         pins.clear()
         drawQFN(projectNames[-1] + ".lef", int(string.split()[-1]), resizeStates[-1])
 
-    elif "delete" in string:
-        output.delete(wires[int(string.split()[-1])])
 
     elif "save as" in string:
         writeImage(string)
         text.insert(END, "Image saved successfully")
-
-    elif "resize" in string:
-        output.delete('all')
-        wires.clear()
-        pins.clear()
-        resizeStates.append(int(string.split()[-1]))
-        drawQFN(projectNames[-1] + ".lef", 0, int(string.split()[-1]))
+]
     elif "write svg as" in string:
         canvasvg.saveall(string.split()[-1], output, items=None, margin=10, tounicode=None)
         text.insert(END, "SVG file saved successfully")
 
-    elif "s" in string:
-        
-        switch = not switch
-        text.insert(END, "Switched wire acnhor")
         
     else:
         text.insert(END, "Error: " + string + " is not a valid command" + "\n")
