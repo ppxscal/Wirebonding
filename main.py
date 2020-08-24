@@ -4,12 +4,13 @@ from tkinter import filedialog
 import math
 import sys
 from PIL import ImageTk, Image
+
 try:
     from PIL import ImageGrab
 except:
     import pyscreenshot as ImageGrab
 
-sys.path.insert(1, 'C:/Users/pasca/Desktop/Projects/Wirebonding/canvas2svg-master')
+sys.path.insert(1, "C:/Users/pasca/Desktop/Projects/Wirebonding/canvas2svg-master")
 import canvasvg
 import test
 
@@ -27,7 +28,7 @@ import test
 
 packageMemory = []
 img = None
-switch = True
+
 
 class Point:
     def __init__(self, x, y):
@@ -39,8 +40,12 @@ class Point:
 
 # point q lies on line segment 'pr'
 def onSegment(p, q, r):
-    if ((q.x <= max(p.x, r.x)) and (q.x >= min(p.x, r.x)) and
-            (q.y <= max(p.y, r.y)) and (q.y >= min(p.y, r.y))):
+    if (
+        (q.x <= max(p.x, r.x))
+        and (q.x >= min(p.x, r.x))
+        and (q.y <= max(p.y, r.y))
+        and (q.y >= min(p.y, r.y))
+    ):
         return True
     return False
 
@@ -56,11 +61,11 @@ def orientation(p, q, r):
     # for details of below formula.
 
     val = (float(q.y - p.y) * (r.x - q.x)) - (float(q.x - p.x) * (r.y - q.y))
-    if (val > 0):
+    if val > 0:
 
         # Clockwise orientation
         return 1
-    elif (val < 0):
+    elif val < 0:
 
         # Counterclockwise orientation
         return 2
@@ -81,32 +86,32 @@ def doIntersect(p1, q1, p2, q2):
     o4 = orientation(p2, q2, q1)
 
     # General case
-    if ((o1 != o2) and (o3 != o4)):
+    if (o1 != o2) and (o3 != o4):
         return True
 
     # Special Cases
 
     # p1 , q1 and p2 are colinear and p2 lies on segment p1q1
-    if ((o1 == 0) and onSegment(p1, p2, q1)):
+    if (o1 == 0) and onSegment(p1, p2, q1):
         return True
 
     # p1 , q1 and q2 are colinear and q2 lies on segment p1q1
-    if ((o2 == 0) and onSegment(p1, q2, q1)):
+    if (o2 == 0) and onSegment(p1, q2, q1):
         return True
 
     # p2 , q2 and p1 are colinear and p1 lies on segment p2q2
-    if ((o3 == 0) and onSegment(p2, p1, q2)):
+    if (o3 == 0) and onSegment(p2, p1, q2):
         return True
 
     # p2 , q2 and q1 are colinear and q1 lies on segment p2q2
-    if ((o4 == 0) and onSegment(p2, q1, q2)):
+    if (o4 == 0) and onSegment(p2, q1, q2):
         return True
 
     # If none of the cases
     return False
 
-class Rectangle:
 
+class Rectangle:
     def __init__(self, xl, yl, xr, yr):
         self.xl = xl
         self.yl = yl
@@ -122,8 +127,8 @@ class Rectangle:
     def getCoordinates(self):
         return [self.xl, self.yl, self.xr, self.yr]
 
-class vQFN:
 
+class vQFN:
     def __init__(self, string, resizeFactor, canvas):
         self.string = string
         self.lefReader = test.lefReader(string, resizeFactor)
@@ -148,6 +153,10 @@ class vQFN:
         self.canvas = canvas
         self.Initialize()
         self.switch = True
+        self.left = None
+        self.bottom = None
+        self.right = None
+        self.top = None
 
     def centralPad(self):
         xArray = []
@@ -182,108 +191,182 @@ class vQFN:
 
     def getImgDimx(self):
         return self.imgDimx
-    
+
     def getImgDimy(self):
         return self.imgDimy
 
     def getCentral(self):
         return self.central
-    
-    def getCenter(self): 
+
+    def getCenter(self):
         return self.center
 
     def getPinRange(self):
         return self.pinRange
-    
+
     def getResizeFactor(self):
         return self.resizeFactor
-    
+
     def getImg(self):
         return self.img
+
     def getWires(self):
         return self.wires
+
     def getCanvas(self):
         return self.canvas
+
     def getPins(self):
         return self.pins
+
     def getPads(self):
         return self.padItems
+
     def getSwitch(self):
         return self.switch
+
     def flipSwitch(self):
-        self.switch = not(self.switch)
+        self.switch = not (self.switch)
+
     def Initialize(self):
 
         self.centers = self.getCenters()
         self.central = self.centralPad()
-        self.center =  [(self.central[0] + self.central[2]) / 2, (self.central[1] + self.central[3]) / 2]
+        self.center = [
+            (self.central[0] + self.central[2]) / 2,
+            (self.central[1] + self.central[3]) / 2,
+        ]
         self.numberSide = int(round(len(self.centers) / 4))
-        self.pinRange = ((2 * self.numberSide) + 1) * 500 / self.resizeFactor / 2 - 500 / self.resizeFactor
-        self.img = Image.open(self.string[:-4] + '.png')
+        self.pinRange = (
+            (2 * self.numberSide) + 1
+        ) * 500 / self.resizeFactor / 2 - 500 / self.resizeFactor
+        self.img = Image.open(self.string[:-4] + ".png")
         self.imgDimx = self.getDim()[0] / self.resizeFactor
         self.imgDimy = self.getDim()[1] / self.resizeFactor
-        self.img = self.img.resize((int(round(self.imgDimx)), int(round(self.imgDimy))), Image.ANTIALIAS)
+        self.img = self.img.resize(
+            (int(round(self.imgDimx)), int(round(self.imgDimy))), Image.ANTIALIAS
+        )
         self.img = ImageTk.PhotoImage(self.img)
-        #Pads by Pins
-       
-    
+        self.canvas.img = self.img
+        # Pads by Pins
+
     def drawImage(self):
-        self.canvas.create_image(self.center[0], self.center[1], image=img)
-    
+        self.canvas.create_image(self.center[0], self.center[1], image=self.img)
+
     def drawInnerRect(self):
-        self.canvas.create_rectangle(self.central[0], self.central[1], self.central[2], self.central[3])
-    
+        self.canvas.create_rectangle(
+            self.central[0], self.central[1], self.central[2], self.central[3]
+        )
+
     def drawOuterRect(self):
-        self.canvas.create_rectangle(self.center[0] - self.pinRange / 2 - 1000 / self.resizeFactor,
-                            self.center[1] - self.pinRange / 2 - 1000 / self.resizeFactor,
-                            self.center[0] + self.pinRange / 2 + 1000 / self.resizeFactor,
-                            self.center[1] + self.pinRange / 2 + 1000 / self.resizeFactor, fill='black') 
+        self.canvas.create_rectangle(
+            self.center[0] - self.pinRange / 2 - 1000 / self.resizeFactor,
+            self.center[1] - self.pinRange / 2 - 1000 / self.resizeFactor,
+            self.center[0] + self.pinRange / 2 + 1000 / self.resizeFactor,
+            self.center[1] + self.pinRange / 2 + 1000 / self.resizeFactor,
+            fill="black",
+        )
+
     def drawPaddle(self):
-        self.canvas.create_rectangle(self.center[0] - self.pinRange / 2,
-                            self.center[1] - self.pinRange / 2,
-                            self.center[0] + self.pinRange / 2,
-                            self.center[1] + self.pinRange / 2, fill='silver')
+        self.canvas.create_rectangle(
+            self.center[0] - self.pinRange / 2,
+            self.center[1] - self.pinRange / 2,
+            self.center[0] + self.pinRange / 2,
+            self.center[1] + self.pinRange / 2,
+            fill="silver",
+        )
+
     def drawMidRect(self):
-        self.canvas.create_rectangle(self.center[0] - self.imgDimx / 2, self.center[1] - self.imgDimy / 2, self.center[0] + self.imgDimx / 2, self.center[1] + self.imgDimy / 2)
-    
+        self.canvas.create_rectangle(
+            self.center[0] - self.imgDimx / 2,
+            self.center[1] - self.imgDimy / 2,
+            self.center[0] + self.imgDimx / 2,
+            self.center[1] + self.imgDimy / 2,
+        )
+
     def drawPads(self):
         for pad in self.array:
-            self.padItems.append(self.canvas.create_rectangle(pad[0], pad[1], pad[2], pad[3], fill = 'white'))
-    
+            self.padItems.append(
+                self.canvas.create_rectangle(
+                    pad[0], pad[1], pad[2], pad[3], fill="white"
+                )
+            )
+
     # creating paddles
     # pin dimensions, .25mm wide, .25mm spacing, .5mm length, .5mm from paddle
     # order is left, bottom, right, top
 
     def drawPinsLeft(self):
         for i in range(self.numberSide):
-            self.pins.append(self.canvas.create_rectangle(self.center[0] - self.pinRange / 2 - 1000 / self.resizeFactor,
-                                            self.center[1] - self.pinRange / 2 + 500 * i / self.resizeFactor,
-                                            self.center[0] - self.pinRange / 2 - 500 / self.resizeFactor,
-                                            self.center[1] - self.pinRange / 2 + 250 / self.resizeFactor + 500 * i / self.resizeFactor,
-                                            fill='silver'))
+            self.pins.append(
+                self.canvas.create_rectangle(
+                    self.center[0] - self.pinRange / 2 - 1000 / self.resizeFactor,
+                    self.center[1] - self.pinRange / 2 + 500 * i / self.resizeFactor,
+                    self.center[0] - self.pinRange / 2 - 500 / self.resizeFactor,
+                    self.center[1]
+                    - self.pinRange / 2
+                    + 250 / self.resizeFactor
+                    + 500 * i / self.resizeFactor,
+                    fill="silver",
+                )
+            )
+
     def drawPinsBottom(self):
         for i in range(self.numberSide):
-            self.pins.append(self.canvas.create_rectangle(self.center[0] - self.pinRange / 2 + 500 * i / self.resizeFactor,
-                                            self.center[1] + self.pinRange / 2 + 1000 / self.resizeFactor,
-                                            self.center[0] - self.pinRange / 2 + 250 / self.resizeFactor + 500 * i / self.resizeFactor,
-                                            self.center[1] + self.pinRange / 2 + 500 / self.resizeFactor, fill='silver'))
-    
+            self.pins.append(
+                self.canvas.create_rectangle(
+                    self.center[0] - self.pinRange / 2 + 500 * i / self.resizeFactor,
+                    self.center[1] + self.pinRange / 2 + 1000 / self.resizeFactor,
+                    self.center[0]
+                    - self.pinRange / 2
+                    + 250 / self.resizeFactor
+                    + 500 * i / self.resizeFactor,
+                    self.center[1] + self.pinRange / 2 + 500 / self.resizeFactor,
+                    fill="silver",
+                )
+            )
+
     def drawPinsRight(self):
         for i in range(self.numberSide):
-            self.pins.append(self.canvas.create_rectangle(self.center[0] + self.pinRange / 2 + 1000 / self.resizeFactor,
-                                            self.center[1] + self.pinRange / 2 - 500 * i / self.resizeFactor,
-                                            self.center[0] + self.pinRange / 2 + 500 / self.resizeFactor,
-                                            self.center[1] + self.pinRange / 2 - 250 / self.resizeFactor - 500 * i / self.resizeFactor,
-                                            fill='silver'))
+            self.pins.append(
+                self.canvas.create_rectangle(
+                    self.center[0] + self.pinRange / 2 + 1000 / self.resizeFactor,
+                    self.center[1] + self.pinRange / 2 - 500 * i / self.resizeFactor,
+                    self.center[0] + self.pinRange / 2 + 500 / self.resizeFactor,
+                    self.center[1]
+                    + self.pinRange / 2
+                    - 250 / self.resizeFactor
+                    - 500 * i / self.resizeFactor,
+                    fill="silver",
+                )
+            )
+
     def drawPinsTop(self):
         for i in range(self.numberSide):
-            self.pins.append(output.create_rectangle(self.center[0] + self.pinRange / 2 - 500 * i / self.resizeFactor,
-                                            self.center[1] - self.pinRange / 2 - 1000 / self.resizeFactor,
-                                            self.center[0] + self.pinRange / 2 - 250 / self.resizeFactor - 500 * i / self.resizeFactor,
-                                            self.center[1] - self.pinRange / 2 - 500 / self.resizeFactor, fill='silver'))
+            self.pins.append(
+                output.create_rectangle(
+                    self.center[0] + self.pinRange / 2 - 500 * i / self.resizeFactor,
+                    self.center[1] - self.pinRange / 2 - 1000 / self.resizeFactor,
+                    self.center[0]
+                    + self.pinRange / 2
+                    - 250 / self.resizeFactor
+                    - 500 * i / self.resizeFactor,
+                    self.center[1] - self.pinRange / 2 - 500 / self.resizeFactor,
+                    fill="silver",
+                )
+            )
+
+    def changePinRange(self, number):
+        self.numberSide += number
+
+        self.pinRange = (
+            (2 * self.numberSide) + 1
+        ) * 500 / self.resizeFactor / 2 - 500 / self.resizeFactor
+        self.canvas.delete("all")
 
     def getCenterRect(self, i):
         bounds = self.canvas.bbox(i)
+        print
         return [(bounds[0] + bounds[2]) / 2, (bounds[1] + bounds[3]) / 2]
 
     def distance(self, i, j):
@@ -293,7 +376,6 @@ class vQFN:
         y = i[1] - j[1]
 
         return math.hypot(x, y)
-
 
     def drawWires(self):
         xArray = []
@@ -323,57 +405,28 @@ class vQFN:
         right = centerIterator(right)
         top = centerIterator(top)
 
-        for i in left:
+        self.left = left
+        self.bottom = bottom
+        self.right = right
+        self.top = top
+
+        for i in left + bottom + right + top:
             for j in self.pins:
-                self.distanceToPins.append(self.distance(i,j))
+                self.distanceToPins.append(self.distance(i, j))
             for element in range(len(self.distanceToPins)):
                 if element in self.takenPins:
                     self.distanceToPins[element] = sys.maxsize
             closest = self.distanceToPins.index(min(self.distanceToPins))
             locI = self.getCenterRect(i)
             locJ = self.getCenterRect(self.pins[closest])
-            self.wires.append(self.canvas.create_line(locI[0], locI[1], locJ[0], locJ[1], fill='red'))
+            self.wires.append(
+                self.canvas.create_line(locI[0], locI[1], locJ[0], locJ[1], fill="red")
+            )
             self.takenPins.append(self.pins.index(self.pins[closest]))
             self.distanceToPins.clear()
-        for i in bottom:
-            for j in self.pins:
-                self.distanceToPins.append(self.distance(i,j))
-            for element in range(len(self.distanceToPins)):
-                if element in self.takenPins:
-                    self.distanceToPins[element] = sys.maxsize
-            closest = self.distanceToPins.index(min(self.distanceToPins))
-            locI = self.getCenterRect(i)
-            locJ = self.getCenterRect(self.pins[closest])
-            self.wires.append(self.canvas.create_line(locI[0], locI[1], locJ[0], locJ[1], fill='red'))
-            self.takenPins.append(self.pins.index(self.pins[closest]))
-            self.distanceToPins.clear()
-        for i in right:
-            for j in self.pins:
-                self.distanceToPins.append(self.distance(i,j))
-            for element in range(len(self.distanceToPins)):
-                if element in self.takenPins:
-                    self.distanceToPins[element] = sys.maxsize
-            closest = self.distanceToPins.index(min(self.distanceToPins))
-            locI = self.getCenterRect(i)
-            locJ = self.getCenterRect(self.pins[closest])
-            self.wires.append(self.canvas.create_line(locI[0], locI[1], locJ[0], locJ[1], fill='red'))
-            self.takenPins.append(self.pins.index(self.pins[closest]))
-            self.distanceToPins.clear()
-        for i in top:
-            for j in self.pins:
-                self.distanceToPins.append(self.distance(i,j))
-            for element in range(len(self.distanceToPins)):
-                if element in self.takenPins:
-                    self.distanceToPins[element] = sys.maxsize
-            closest = self.distanceToPins.index(min(self.distanceToPins))
-            locI = self.getCenterRect(i)
-            locJ = self.getCenterRect(self.pins[closest])
-            self.wires.append(self.canvas.create_line(locI[0], locI[1], locJ[0], locJ[1], fill='red'))
-            self.takenPins.append(self.pins.index(self.pins[closest]))
-            self.distanceToPins.clear()
-    
+
     def checkCrossover(self, i):
-        x0,y0,x1,y1 = self.canvas.coords(i)
+        x0, y0, x1, y1 = self.canvas.coords(i)
         a1 = Point(x0, y0)
         a2 = Point(x1, y1)
         temp = list(self.wires)
@@ -383,78 +436,110 @@ class vQFN:
             b1 = Point(x01, y01)
             b2 = Point(x11, y11)
 
-            if not doIntersect(a1,a2,b1,b2):
+            if not doIntersect(a1, a2, b1, b2):
                 continue
             else:
                 self.canvas.coords(i, x0, y0, x11, y11)
                 self.canvas.coords(j, x01, y01, x1, y1)
 
+    def checkAngles(self):
+
+        for i in self.pins:
+            pinDim = self.canvas.bbox(i)
+            wiresWithinPin = list(
+                self.canvas.find_overlapping(pinDim[0], pinDim[1], pinDim[2], pinDim[3])
+            )
+            for j in wiresWithinPin:
+                if j in self.wires:
+                    x01, y01, x11, y11 = self.canvas.coords(j)
+                    for k in self.padItems:
+                        padDim = self.canvas.bbox(k)
+                        wiresWithinPad = list(
+                            self.canvas.find_overlapping(
+                                padDim[0], padDim[1], padDim[2], padDim[3]
+                            )
+                        )
+                        for l in wiresWithinPad:
+                            if l == j:
+                                x = abs(x01 - x11)
+                                y = abs(y01 - y11)
+
+                                if k in self.left or k in self.right:
+                                    if math.atan(x / (y + 1)) < math.radians(40):
+                                        self.canvas.itemconfig(l, fill="green")
+                                else:
+                                    if math.atan(y / (x + 1)) < math.radians(40):
+                                        self.canvas.itemconfig(l, fill="green")
 
 
 def drawQFN(string, resizeFactor, canvas):
-    output.delete('all')
-    qfn = vQFN(string+ ".lef", resizeFactor, canvas)
+    output.delete("all")
+    qfn = vQFN(string + ".lef", resizeFactor, canvas)
 
     packageMemory.append(qfn)
 
     # Outer Rect(Package)
-    qfn.drawOuterRect() 
+    qfn.drawOuterRect()
 
     # paddle
     qfn.drawPaddle()
-   
+
     # Inner Rect
     qfn.drawInnerRect()
 
     # Mid Rect
-    qfn.drawMidRect()       
+    qfn.drawMidRect()
 
-     #pads
+    # Image
+    qfn.drawImage()
+    # pads
     qfn.drawPads()
 
-    #Image
-    qfn.drawImage()
-
-    #pins
+    # pins
     qfn.drawPinsLeft()
     qfn.drawPinsBottom()
     qfn.drawPinsRight()
     qfn.drawPinsTop()
 
-    #wires
+    # wires
     qfn.drawWires()
 
-    #Crossover correction
+    # Crossover correction
     for i in qfn.getWires():
         qfn.checkCrossover(i)
     for i in qfn.getWires():
         qfn.checkCrossover(i)
 
+    qfn.checkAngles()
+
+    return qfn
 
 
 def centerIterator(list):
-        result = []
-        countRight = 1
-        countLeft = 1
-        center = round((len(list) - 1) / 2)
+    result = []
+    countRight = 1
+    countLeft = 1
+    center = round((len(list) - 1) / 2)
 
-        result.append(list[center])
+    result.append(list[center])
 
-        while True:
-            if center - countLeft < 0:
-                break
-            try:
-                result.append(list[center + countRight])
-                countRight += 1
-            except:
-                pass
-            result.append(list[center - countLeft])
-            countLeft += 1
+    while True:
+        if center - countLeft < 0:
+            break
+        try:
+            result.append(list[center + countRight])
+            countRight += 1
+        except:
+            pass
+        result.append(list[center - countLeft])
+        countLeft += 1
 
-        return result
+    return result
+
 
 def Enter(e):
     clickEntry()
+
 
 def clickEntry():
     entered_text = entry.get()
@@ -462,11 +547,12 @@ def clickEntry():
     text.insert(END, jomama)
     jomama = ""
     entry.delete(0, END)
-    #CMI(entered_text)
+    CMI(entered_text)
+
 
 def moveLine(e):
     qfn = packageMemory[-1]
-    outputItem = qfn.getCanvas().find_withtag('current')
+    outputItem = qfn.getCanvas().find_withtag("current")
     try:
         x0, y0, x1, y1 = qfn.getCanvas().coords(outputItem)
     except:
@@ -475,61 +561,93 @@ def moveLine(e):
     try:
         if outputItem[0] in qfn.getWires():
             if qfn.getSwitch():
-                qfn.getCanvas().coords(outputItem, x0, y0, qfn.getCanvas().canvasx(e.x), qfn.getCanvas().canvasy(e.y))
-                qfn.getCanvas().itemconfig(outputItem, fill='blue')
+                qfn.getCanvas().coords(
+                    outputItem,
+                    x0,
+                    y0,
+                    qfn.getCanvas().canvasx(e.x),
+                    qfn.getCanvas().canvasy(e.y),
+                )
+                qfn.getCanvas().itemconfig(outputItem, fill="blue")
             else:
-                qfn.getCanvas().coords(outputItem,qfn.getCanvas().canvasx(e.x), qfn.getCanvas().canvasy(e.y), x1, y1)
-                qfn.getCanvas().itemconfig(outputItem, fill='blue') 
+                qfn.getCanvas().coords(
+                    outputItem,
+                    qfn.getCanvas().canvasx(e.x),
+                    qfn.getCanvas().canvasy(e.y),
+                    x1,
+                    y1,
+                )
+                qfn.getCanvas().itemconfig(outputItem, fill="blue")
     except:
         pass
     pass
+
 
 def release(e):
     qfn = packageMemory[-1]
     try:
-        outputItem = qfn.getCanvas().find_withtag('current')
+        outputItem = qfn.getCanvas().find_withtag("current")
         x0, y0, x1, y1 = qfn.getCanvas().coords(outputItem)
         try:
             if outputItem[0] in qfn.getWires():
-                qfn.getCanvas().itemconfig(outputItem, fill='red')
+                qfn.getCanvas().itemconfig(outputItem, fill="red")
                 if qfn.getSwitch():
                     for i in qfn.getPins():
                         box = qfn.getCanvas().bbox(i)
-                        tuple = qfn.getCanvas().find_overlapping(box[0], box[1], box[2], box[3])
+                        tuple = qfn.getCanvas().find_overlapping(
+                            box[0], box[1], box[2], box[3]
+                        )
                         myList = list(tuple)
                         if outputItem[0] in myList:
-                            qfn.getCanvas().coords(outputItem, x0, y0, (box[0] + box[2]) /2, (box[1] + box[3]) /2)
+                            qfn.getCanvas().coords(
+                                outputItem,
+                                x0,
+                                y0,
+                                (box[0] + box[2]) / 2,
+                                (box[1] + box[3]) / 2,
+                            )
                 else:
                     for i in qfn.getPads():
                         box = qfn.getCanvas().bbox(i)
-                        tuple = qfn.getCanvas().find_overlapping(box[0], box[1], box[2], box[3])
+                        tuple = qfn.getCanvas().find_overlapping(
+                            box[0], box[1], box[2], box[3]
+                        )
                         myList = list(tuple)
                         if outputItem[0] in myList:
-                            qfn.getCanvas().coords(outputItem,(box[0] + box[2]) /2, (box[1] + box[3]) /2, x1, y1)
+                            qfn.getCanvas().coords(
+                                outputItem,
+                                (box[0] + box[2]) / 2,
+                                (box[1] + box[3]) / 2,
+                                x1,
+                                y1,
+                            )
+                qfn.checkAngles()
         except:
             pass
     except:
         pass
-    
-    pass
 
 
 def CMI(string):
-
-    qfn = packageMemory[-1]
-
-    if 's' in string:
-        qfn.flipSwitch()
-'''
     if "generate" in string:
-        projectNames.append(string[9: len(string)])
-        drawQFN(string[9: len(string)] + ".lef", 0, 15)
+        output.delete("all")
+        packageMemory.append(drawQFN(string.split()[-1], 15, output))
+
+    if "s" in string:
+        packageMemory[-1].flipSwitch()
+        text.insert(END, "Switched wire acnhor" + "\n")
+
+    if "+" in string:
+        packageMemory[-1].changePinRange(int(string.split()[-1]))
+        drawModifiedQFN()
+
+
+"""
     elif "shift" in string:
         output.delete("all")
         wires.clear()
         pins.clear()
         drawQFN(projectNames[-1] + ".lef", int(string.split()[-1]), resizeStates[-1])
-
 
     elif "delete" in string:
         output.delete(wires[int(string.split()[-1])])
@@ -555,32 +673,31 @@ def CMI(string):
         
     else:
         text.insert(END, "Error: " + string + " is not a valid command" + "\n")
-'''
-    
-    
+"""
+
 
 window = Tk()
 window.title("Wirebonding")
-window.geometry('770x1080')
+window.geometry("770x1080")
 window.configure(background="white")
 
 frame = Frame(window)
-frame.pack(expand = True, fill=BOTH)
+frame.pack(expand=True, fill=BOTH)
 
 w = Label(frame, text="Output")
 w.pack()
 output = Canvas(frame, width=1500, bg="white", height=400)
 
-xscrollbar = ttk.Scrollbar(frame, orient='horizontal')
+xscrollbar = ttk.Scrollbar(frame, orient="horizontal")
 xscrollbar.pack(side=BOTTOM, fill=X)
-xscrollbar.config(command=output.xview)                                                                                                                                                                 
+xscrollbar.config(command=output.xview)
 
-yscrollbar = ttk.Scrollbar(frame, orient='vertical')
+yscrollbar = ttk.Scrollbar(frame, orient="vertical")
 yscrollbar.pack(side=RIGHT, fill=Y)
 yscrollbar.config(command=output.yview)
 
 output.config(xscrollcommand=xscrollbar.set, yscrollcommand=yscrollbar.set)
-output.pack(side=LEFT,expand=True,fill=BOTH)
+output.pack(side=LEFT, expand=True, fill=BOTH)
 
 frame1 = Frame(window)
 frame1.pack()
@@ -596,10 +713,8 @@ text.pack()
 # y1scrollbar = ttk.Scrollbar(frame1, orient='vertical')
 # y1scrollbar.pack(side = RIGHT, fill = Y)
 # y1scrollbar.config(command=output.yview)
-output.bind('<B1-Motion>', moveLine)
-output.bind('<ButtonRelease-1>', release)
-entry.bind('<Return>', Enter)
-
-drawQFN("hydra", 15, output)
+output.bind("<B1-Motion>", moveLine)
+output.bind("<ButtonRelease-1>", release)
+entry.bind("<Return>", Enter)
 
 window.mainloop()
