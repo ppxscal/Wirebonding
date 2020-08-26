@@ -16,15 +16,18 @@ import test
 
 # tags
 # given which wires are connected to pads and pins, write pins numbered top left
-# as soon as wire is attached, pin name must be known - pin 1 - 12, list names
+# as soon as wire is attached, pin name must be knowshift - pin 1 - 12, list names
 # generate pin packaging pinout
 # mapping of names to pin numbers
 
 # Rules
 # max length 3mm
-# wire tp bond pad center 120um
-# wire to package pad 120um
+# wire to bond pad center 120 um
+# wire to package pad um
 # min wire angle to die edge 40degrees
+
+#
+
 
 packageMemory = []
 img = None
@@ -380,6 +383,18 @@ class vQFN:
 
         return math.hypot(x, y)
 
+    def checkLength(self):
+        for i in self.wires:
+            x0, y0, x1, y1 = self.canvas.coords(i)
+
+            x = x0 - x1
+            y = y0 - y1
+
+            if not (
+                1000 / self.resizeFactor <= math.hypot(x, y) <= 3000 / self.resizeFactor
+            ):
+                self.canvas.itemconfig(i, fill="red")
+
     def drawWires(self):
         xArray = []
         yArray = []
@@ -394,13 +409,29 @@ class vQFN:
             yArray.append(self.getCenterRect(i)[1])
 
         for i in self.padItems:
-            if self.getCenterRect(i)[0] == min(xArray):
+            if (
+                min(xArray) - 50 / self.resizeFactor
+                <= self.getCenterRect(i)[0]
+                <= min(xArray) + 50 / self.resizeFactor
+            ):
                 left.append(i)
-            if self.getCenterRect(i)[0] == max(xArray):
+            if (
+                max(xArray) - 50 / self.resizeFactor
+                <= self.getCenterRect(i)[0]
+                <= max(xArray) + 50 / self.resizeFactor
+            ):
                 right.append(i)
-            if self.getCenterRect(i)[1] == max(yArray):
+            if (
+                max(yArray) - 50 / self.resizeFactor
+                <= self.getCenterRect(i)[1]
+                <= max(yArray) + 50 / self.resizeFactor
+            ):
                 top.append(i)
-            if self.getCenterRect(i)[1] == min(yArray):
+            if (
+                min(yArray) - 50 / self.resizeFactor
+                <= self.getCenterRect(i)[1]
+                <= min(yArray) + 50 / self.resizeFactor
+            ):
                 bottom.append(i)
 
         left = centerIterator(left)
@@ -423,30 +454,48 @@ class vQFN:
             locI = self.getCenterRect(i)
             locJ = self.getCenterRect(self.pins[closest])
             self.wires.append(
-                self.canvas.create_line(locI[0], locI[1], locJ[0], locJ[1], fill="red")
+                self.canvas.create_line(locI[0], locI[1], locJ[0], locJ[1], fill="gold")
             )
             self.takenPins.append(self.pins.index(self.pins[closest]))
             self.distanceToPins.clear()
 
-    def checkCrossover(self, i):
-        x0, y0, x1, y1 = self.canvas.coords(i)
-        a1 = Point(x0, y0)
-        a2 = Point(x1, y1)
-        temp = list(self.wires)
-        temp.remove(i)
-        for j in temp:
-            x01, y01, x11, y11 = output.coords(j)
-            b1 = Point(x01, y01)
-            b2 = Point(x11, y11)
+    def fixCrossover(self):
+        for i in self.wires:
+            x0, y0, x1, y1 = self.canvas.coords(i)
+            a1 = Point(x0, y0)
+            a2 = Point(x1, y1)
+            temp = list(self.wires)
+            temp.remove(i)
+            for j in temp:
+                x01, y01, x11, y11 = output.coords(j)
+                b1 = Point(x01, y01)
+                b2 = Point(x11, y11)
 
-            if not doIntersect(a1, a2, b1, b2):
-                continue
-            else:
-                self.canvas.coords(i, x0, y0, x11, y11)
-                self.canvas.coords(j, x01, y01, x1, y1)
+                if not doIntersect(a1, a2, b1, b2):
+                    continue
+                else:
+                    self.canvas.coords(i, x0, y0, x11, y11)
+                    self.canvas.coords(j, x01, y01, x1, y1)
+
+    def checkCrossOver(self):
+        for i in self.wires:
+            x0, y0, x1, y1 = self.canvas.coords(i)
+            a1 = Point(x0, y0)
+            a2 = Point(x1, y1)
+            temp = list(self.wires)
+            temp.remove(i)
+            for j in temp:
+                x01, y01, x11, y11 = output.coords(j)
+                b1 = Point(x01, y01)
+                b2 = Point(x11, y11)
+
+                if not doIntersect(a1, a2, b1, b2):
+                    continue
+                else:
+                    self.canvas.itemconfig(i, fill="red")
+                    self.canvas.itemconfig(l, fill="red")
 
     def checkAngles(self):
-
         for i in self.pins:
             pinDim = self.canvas.bbox(i)
             wiresWithinPin = list(
@@ -469,10 +518,15 @@ class vQFN:
 
                                 if k in self.left or k in self.right:
                                     if math.atan(x / (y + 1)) < math.radians(40):
-                                        self.canvas.itemconfig(l, fill="green")
+                                        self.canvas.itemconfig(l, fill="red")
+                                    else:
+                                        self.canvas.itemconfig(l, fill="#DA822B")
+
                                 else:
                                     if math.atan(y / (x + 1)) < math.radians(40):
-                                        self.canvas.itemconfig(l, fill="green")
+                                        self.canvas.itemconfig(l, fill="red")
+                                    else:
+                                        self.canvas.itemconfig(l, fill="#DA822B")
 
     def shiftWires(self, number):
 
@@ -502,9 +556,9 @@ class vQFN:
                     self.canvas.coords(j, x01, y01, newPin[0], newPin[1])
                     alreadyShifted.append(j)
 
-            self.checkAngles()
+        self.checkAngles()
 
-            # self.getCenterRect(self.pins[(self.pins.index(i) + 1) % len(self.pins)])
+        # self.getCenterRect(self.pins[(self.pins.index(i) + 1) % len(self.pins)])
 
 
 def drawQFN(string, resizeFactor, canvas):
@@ -538,12 +592,19 @@ def drawQFN(string, resizeFactor, canvas):
     qfn.drawWires()
 
     # Crossover correction
-    for i in qfn.getWires():
-        qfn.checkCrossover(i)
-    for i in qfn.getWires():
-        qfn.checkCrossover(i)
+
+    qfn.fixCrossover()
+
+    qfn.fixCrossover()
 
     qfn.checkAngles()
+
+    qfn.checkLength()
+
+    output.xview_moveto(qfn.getCenter()[0] + 999999)
+    output.yview_moveto(qfn.getCenter()[1])
+
+    # get width and height, get center, change coordinates by
 
     return qfn
 
@@ -581,12 +642,14 @@ def drawBiggerQFN(string, resizeFactor, canvas, pinRange):
     qfn.drawWires()
 
     # Crossover correction
-    for i in qfn.getWires():
-        qfn.checkCrossover(i)
-    for i in qfn.getWires():
-        qfn.checkCrossover(i)
+
+    qfn.fixCrossover()
+
+    qfn.fixCrossover()
 
     qfn.checkAngles()
+
+    qfn.checkLength()
 
     return qfn
 
@@ -698,6 +761,7 @@ def release(e):
                                 y1,
                             )
                 qfn.checkAngles()
+                qfn.checkLength()
         except:
             pass
     except:
@@ -728,16 +792,6 @@ def CMI(string):
             )
             text.insert(END, "SVG file saved successfully" + "\n")
 
-    elif "a" in string:
-        packageMemory[-1].flipSwitch()
-        text.insert(END, "Switched wire acnhor" + "\n")
-
-    elif "+" in string:
-        packageMemory.append(
-            drawBiggerQFN(
-                packageMemory[-1].getName(), 15, output, int(string.split()[-1])
-            )
-        )
     elif "resize" in string:
         packageMemory.append(
             drawQFN(packageMemory[-1].getName(), int(string.split()[-1]), output)
@@ -749,28 +803,27 @@ def CMI(string):
     elif "shift" in string:
 
         packageMemory[-1].shiftWires(int(string.split()[-1]))
+        packageMemory[-1].checkAngles()
 
+    elif "check" in string:
+        packageMemory[-1].checkAngles()
 
-"""
-    elif "shift" in string:
-        output.delete("all")
-        wires.clear()
-        pins.clear()
-        drawQFN(projectNames[-1] + ".lef", int(string.split()[-1]), resizeStates[-1])
+    elif "a" in string:
+        packageMemory[-1].flipSwitch()
+        text.insert(END, "Switched wire acnhor" + "\n")
 
+    elif "+" in string or "-" in string:
+        packageMemory.append(
+            drawBiggerQFN(
+                packageMemory[-1].getName(),
+                packageMemory[-1].getResizeFactor(),
+                output,
+                int(string.split()[-1]),
+            )
+        )
 
-    elif "save as" in string:
-        writeImage(string)
-        text.insert(END, "Image saved successfully")
-]
-    elif "write svg as" in string:
-        canvasvg.saveall(string.split()[-1], output, items=None, margin=10, tounicode=None)
-        text.insert(END, "SVG file saved successfully")
-
-        
     else:
         text.insert(END, "Error: " + string + " is not a valid command" + "\n")
-"""
 
 
 window = Tk()
