@@ -479,7 +479,10 @@ class vQFN:
                     self.canvas.coords(i, x0, y0, x11, y11)
                     self.canvas.coords(j, x01, y01, x1, y1)
 
-                    # self.fixCrossover()
+                    self.fixCrossover()
+
+                    return
+
                     # statement improves wirebonding at the expense of memory issues
 
     def checkCrossOver(self):
