@@ -10,9 +10,11 @@ try:
 except:
     import pyscreenshot as ImageGrab
 
-sys.path.insert(1, "C:/Users/pasca/Desktop/Projects/Wirebonding/canvas2svg-master")
+sys.path.insert(1, "C:/Users/pasca/Desktop/Projects/WirebondingV2/canvas2svg-master")
 import canvasvg
 import test
+
+# sys.setrecursionlimit(1500)
 
 # tags
 # given which wires are connected to pads and pins, write pins numbered top left
@@ -454,7 +456,7 @@ class vQFN:
             locI = self.getCenterRect(i)
             locJ = self.getCenterRect(self.pins[closest])
             self.wires.append(
-                self.canvas.create_line(locI[0], locI[1], locJ[0], locJ[1], fill="gold")
+                self.canvas.create_line(locI[0], locI[1], locJ[0], locJ[1], fill="blue")
             )
             self.takenPins.append(self.pins.index(self.pins[closest]))
             self.distanceToPins.clear()
@@ -477,6 +479,9 @@ class vQFN:
                     self.canvas.coords(i, x0, y0, x11, y11)
                     self.canvas.coords(j, x01, y01, x1, y1)
 
+                    # self.fixCrossover()
+                    # statement improves wirebonding at the expense of memory issues
+
     def checkCrossOver(self):
         for i in self.wires:
             x0, y0, x1, y1 = self.canvas.coords(i)
@@ -492,8 +497,8 @@ class vQFN:
                 if not doIntersect(a1, a2, b1, b2):
                     continue
                 else:
-                    self.canvas.itemconfig(i, fill="red")
-                    self.canvas.itemconfig(l, fill="red")
+                    self.canvas.itemconfig(i, fill="#0000FF")
+                    self.canvas.itemconfig(j, fill="#0000FF")
 
     def checkAngles(self):
         for i in self.pins:
@@ -520,13 +525,13 @@ class vQFN:
                                     if math.atan(x / (y + 1)) < math.radians(40):
                                         self.canvas.itemconfig(l, fill="red")
                                     else:
-                                        self.canvas.itemconfig(l, fill="#DA822B")
+                                        self.canvas.itemconfig(l, fill="#0000FF")
 
                                 else:
                                     if math.atan(y / (x + 1)) < math.radians(40):
                                         self.canvas.itemconfig(l, fill="red")
                                     else:
-                                        self.canvas.itemconfig(l, fill="#DA822B")
+                                        self.canvas.itemconfig(l, fill="#0000FF")
 
     def shiftWires(self, number):
 
@@ -557,8 +562,6 @@ class vQFN:
                     alreadyShifted.append(j)
 
         self.checkAngles()
-
-        # self.getCenterRect(self.pins[(self.pins.index(i) + 1) % len(self.pins)])
 
 
 def drawQFN(string, resizeFactor, canvas):
@@ -601,11 +604,6 @@ def drawQFN(string, resizeFactor, canvas):
 
     qfn.checkLength()
 
-    output.xview_moveto(qfn.getCenter()[0] + 999999)
-    output.yview_moveto(qfn.getCenter()[1])
-
-    # get width and height, get center, change coordinates by
-
     return qfn
 
 
@@ -642,8 +640,6 @@ def drawBiggerQFN(string, resizeFactor, canvas, pinRange):
     qfn.drawWires()
 
     # Crossover correction
-
-    qfn.fixCrossover()
 
     qfn.fixCrossover()
 
@@ -707,7 +703,7 @@ def moveLine(e):
                     qfn.getCanvas().canvasx(e.x),
                     qfn.getCanvas().canvasy(e.y),
                 )
-                qfn.getCanvas().itemconfig(outputItem, fill="blue")
+                qfn.getCanvas().itemconfig(outputItem, fill="#39FF14")
             else:
                 qfn.getCanvas().coords(
                     outputItem,
@@ -716,7 +712,7 @@ def moveLine(e):
                     x1,
                     y1,
                 )
-                qfn.getCanvas().itemconfig(outputItem, fill="blue")
+                qfn.getCanvas().itemconfig(outputItem, fill="#39FF14")
     except:
         pass
     pass
@@ -729,7 +725,7 @@ def release(e):
         x0, y0, x1, y1 = qfn.getCanvas().coords(outputItem)
         try:
             if outputItem[0] in qfn.getWires():
-                qfn.getCanvas().itemconfig(outputItem, fill="red")
+                qfn.getCanvas().itemconfig(outputItem, fill="#0000FF")
                 if qfn.getSwitch():
                     for i in qfn.getPins():
                         box = qfn.getCanvas().bbox(i)
