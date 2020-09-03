@@ -13,8 +13,8 @@ except:
 sys.path.insert(1, "C:/Users/pasca/Desktop/Projects/WirebondingV2/canvas2svg-master")
 import canvasvg
 import test
+import time
 
-# sys.setrecursionlimit(1500)
 
 # tags
 # given which wires are connected to pads and pins, write pins numbered top left
@@ -162,6 +162,7 @@ class vQFN:
         self.bottom = None
         self.right = None
         self.top = None
+        self.badWires = 0
 
     def getName(self):
         return self.string[:-4]
@@ -236,14 +237,14 @@ class vQFN:
     def flipSwitch(self):
         self.switch = not (self.switch)
 
+    def getBadWires(self):
+        return self.badWires
+
     def Initialize(self):
 
         self.centers = self.getCenters()
         self.central = self.centralPad()
-        self.center = [
-            (self.central[0] + self.central[2]) / 2,
-            (self.central[1] + self.central[3]) / 2,
-        ]
+
         self.numberSide = int(round(len(self.centers) / 4))
         self.pinRange = (
             (2 * self.numberSide) + 1
@@ -256,6 +257,7 @@ class vQFN:
         )
         self.img = ImageTk.PhotoImage(self.img)
         self.canvas.img = self.img
+        self.center = [self.imgDimx / 2, self.imgDimy / 2]
         # Pads by Pins
 
     def drawImage(self):
@@ -396,6 +398,7 @@ class vQFN:
                 1000 / self.resizeFactor <= math.hypot(x, y) <= 3000 / self.resizeFactor
             ):
                 self.canvas.itemconfig(i, fill="red")
+                self.badWires += 1
 
     def drawWires(self):
         xArray = []
@@ -478,7 +481,7 @@ class vQFN:
                 else:
                     self.canvas.coords(i, x0, y0, x11, y11)
                     self.canvas.coords(j, x01, y01, x1, y1)
-
+                    # time.sleep(0.1)
                     self.fixCrossover()
 
                     return
@@ -527,12 +530,14 @@ class vQFN:
                                 if k in self.left or k in self.right:
                                     if math.atan(x / (y + 1)) < math.radians(40):
                                         self.canvas.itemconfig(l, fill="red")
+                                        self.badWires += 1
                                     else:
                                         self.canvas.itemconfig(l, fill="#0000FF")
 
                                 else:
                                     if math.atan(y / (x + 1)) < math.radians(40):
                                         self.canvas.itemconfig(l, fill="red")
+                                        self.badWires += 1
                                     else:
                                         self.canvas.itemconfig(l, fill="#0000FF")
 
@@ -564,7 +569,25 @@ class vQFN:
                     self.canvas.coords(j, x01, y01, newPin[0], newPin[1])
                     alreadyShifted.append(j)
 
+        self.badWires = 0
         self.checkAngles()
+        self.checkLength()
+
+    def adjustShift(self):
+        array = []
+        self.shiftWires(-2)
+        array.append(self.badWires)
+        self.shiftWires(1)
+        array.append(self.badWires)
+        self.shiftWires(1)
+        array.append(self.badWires)
+        self.shiftWires(1)
+        array.append(self.badWires)
+        self.shiftWires(1)
+        array.append(self.badWires)
+        bestCase = array.index(min(array))
+        self.shiftWires(-2)
+        self.shiftWires(bestCase - 2)
 
 
 def drawQFN(string, resizeFactor, canvas):
@@ -601,11 +624,7 @@ def drawQFN(string, resizeFactor, canvas):
 
     qfn.fixCrossover()
 
-    qfn.fixCrossover()
-
-    qfn.checkAngles()
-
-    qfn.checkLength()
+    qfn.adjustShift()
 
     return qfn
 
@@ -646,9 +665,7 @@ def drawBiggerQFN(string, resizeFactor, canvas, pinRange):
 
     qfn.fixCrossover()
 
-    qfn.checkAngles()
-
-    qfn.checkLength()
+    qfn.adjustShift()
 
     return qfn
 
@@ -776,6 +793,9 @@ def writeImage(string):
 
 
 def CMI(string):
+    if "*" in string:
+        output.delete("all")
+        packageMemory.append(drawBiggerQFN(string.split()[-1], 15, output, 1))
     if "generate" in string:
         output.delete("all")
         packageMemory.append(drawQFN(string.split()[-1], 15, output))
