@@ -302,7 +302,7 @@ class vQFN:
                 )
             )
 
-    # creating paddles
+    # creating pins
     # pin dimensions, .25mm wide, .25mm spacing, .5mm length, .5mm from paddle
     # order is left, bottom, right, top
 
@@ -485,8 +485,6 @@ class vQFN:
                     self.fixCrossover()
 
                     return
-
-                    # statement improves wirebonding at the expense of memory issues
 
     def checkCrossOver(self):
         for i in self.wires:
