@@ -10,6 +10,8 @@ try:
 except:
     import pyscreenshot as ImageGrab
 
+# imports canvas2svg package manually
+
 sys.path.insert(1, "C:/Users/pasca/Desktop/Projects/WirebondingV2/canvas2svg-master")
 import canvasvg
 import test
@@ -24,14 +26,17 @@ import time
 
 # Rules
 # max length 3mm
-# wire to bond pad center 120 um
-# wire to package pad um
+
+# wire to bond pad center 120 um (Depends on Wire Material)
+# wire to package pad um (Depends on Wire Material)
+
+
 # min wire angle to die edge 40degrees
 
-#
-
-
+# Allows access to previous diagrams
 packageMemory = []
+
+# img object to evade tkinter garbage collector
 img = None
 
 
@@ -62,7 +67,6 @@ def orientation(p, q, r):
     # 1 : Clockwise points
     # 2 : Counterclockwise
 
-    # See https://www.geeksforgeeks.org/orientation-3-ordered-points/amp/
     # for details of below formula.
 
     val = (float(q.y - p.y) * (r.x - q.x)) - (float(q.x - p.x) * (r.y - q.y))
@@ -116,6 +120,9 @@ def doIntersect(p1, q1, p2, q2):
     return False
 
 
+# Rectangle Object for dealing with lef coordinates
+
+
 class Rectangle:
     def __init__(self, xl, yl, xr, yr):
         self.xl = xl
@@ -133,6 +140,9 @@ class Rectangle:
         return [self.xl, self.yl, self.xr, self.yr]
 
 
+# Object Representation of the QFN Package
+
+
 class vQFN:
     def __init__(self, string, resizeFactor, canvas):
         self.string = string
@@ -141,31 +151,74 @@ class vQFN:
         self.array = self.lefReader.getCoordinates()
         for i in self.array:
             self.pads.append(Rectangle(i[0], i[1], i[2], i[3]))
+
+        # returns dimensions of the chip
         self.dim = self.lefReader.getDim()
+
         self.wires = []
+
+        # image object
         self.img = None
+
+        # Directional dimensions of chip
         self.imgDimx = None
         self.imgDimy = None
+
+        # Tkinter pin objects
         self.pins = []
+        # Taken Pins that have been already wire bonded to
+
         self.takenPins = []
+
+        # Center coordinate of the chip
         self.center = None
+
+        # Centers coordinates of each pad
         self.centers = None
+
+        # The length of the span of pins over one side
+
         self.pinRange = None
+
+        # Tkinter pad Objects
         self.padItems = []
+
+        # Dynamic array that details the distance from one pin to every other - is not constant
         self.distanceToPins = []
+
+        # coordinates for the rectangle that outlines the chip - can be used if no image is availiable
         self.central = None
+
+        # Resizing factor for drawing the diagram to fit the tkinter window
+
         self.resizeFactor = resizeFactor
+
         self.canvas = canvas
+
+        # Sets up many self variables
+
         self.Initialize()
+
+        # Switches anchor for dragging wire
+
         self.switch = True
+
+        # Contains pads that belong either to left bottom right or top side of the QFN
+
         self.left = None
+
         self.bottom = None
+
         self.right = None
+
         self.top = None
+
         self.badWires = 0
 
     def getName(self):
         return self.string[:-4]
+
+    # Returns coordinates for the rectangle that outlines the chip - can be used if no image is availiable
 
     def centralPad(self):
         xArray = []
@@ -263,10 +316,14 @@ class vQFN:
     def drawImage(self):
         self.canvas.create_image(self.center[0], self.center[1], image=self.img)
 
+        # draws rectangle inside the chip - for reference purposes
+
     def drawInnerRect(self):
         self.canvas.create_rectangle(
             self.central[0], self.central[1], self.central[2], self.central[3]
         )
+
+        # draws the outline of the entire package
 
     def drawOuterRect(self):
         self.canvas.create_rectangle(
@@ -286,6 +343,8 @@ class vQFN:
             fill="silver",
         )
 
+        # draws chip ouline
+
     def drawMidRect(self):
         self.canvas.create_rectangle(
             self.center[0] - self.imgDimx / 2,
@@ -302,7 +361,7 @@ class vQFN:
                 )
             )
 
-    # creating pins
+    # creating paddles
     # pin dimensions, .25mm wide, .25mm spacing, .5mm length, .5mm from paddle
     # order is left, bottom, right, top
 
@@ -366,6 +425,8 @@ class vQFN:
                 )
             )
 
+        # increase size of packeg
+
     def changePinRange(self, number):
         self.numberSide += number
 
@@ -386,6 +447,8 @@ class vQFN:
         y = i[1] - j[1]
 
         return math.hypot(x, y)
+
+        # checks length requirement for chips - depends on type of wire used
 
     def checkLength(self):
         for i in self.wires:
@@ -464,6 +527,9 @@ class vQFN:
             self.takenPins.append(self.pins.index(self.pins[closest]))
             self.distanceToPins.clear()
 
+        # uscrambles wires
+        # If unsolvable - python runs out of memory. Simply increase package size eg "* strive"
+
     def fixCrossover(self):
         for i in self.wires:
             x0, y0, x1, y1 = self.canvas.coords(i)
@@ -504,6 +570,8 @@ class vQFN:
                     self.canvas.itemconfig(i, fill="#0000FF")
                     self.canvas.itemconfig(j, fill="#0000FF")
 
+        # checks angle requirements
+
     def checkAngles(self):
         for i in self.pins:
             pinDim = self.canvas.bbox(i)
@@ -539,6 +607,8 @@ class vQFN:
                                     else:
                                         self.canvas.itemconfig(l, fill="#0000FF")
 
+        # shift wires any direction mod len(pads)
+
     def shiftWires(self, number):
 
         alreadyShifted = []
@@ -569,7 +639,9 @@ class vQFN:
 
         self.badWires = 0
         self.checkAngles()
-        self.checkLength()
+        # self.checkLength()
+
+        # fins optimized solution for shift
 
     def adjustShift(self):
         array = []
@@ -775,7 +847,7 @@ def release(e):
                                 y1,
                             )
                 qfn.checkAngles()
-                qfn.checkLength()
+                # qfn.checkLength()
         except:
             pass
     except:
