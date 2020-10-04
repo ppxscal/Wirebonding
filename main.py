@@ -21,8 +21,10 @@ import time
 # tags
 # given which wires are connected to pads and pins, write pins numbered top left
 # as soon as wire is attached, pin name must be knowshift - pin 1 - 12, list names
-# generate pin packaging pinout
+# generate pin packaging pinout diagrams
 # mapping of names to pin numbers
+# KiCad Symbols
+
 
 # Rules
 # max length 3mm
@@ -292,6 +294,9 @@ class vQFN:
 
     def getBadWires(self):
         return self.badWires
+
+    def getPinNames(self):
+        return self.lefReader.getPinNames()
 
     def Initialize(self):
 
@@ -775,6 +780,29 @@ def clickEntry():
     CMI(entered_text)
 
 
+def hoverPad(e):
+
+    try:
+        qfn = packageMemory[-1]
+        pinNames = qfn.getPinNames()
+        x = output.canvasx(e.x)
+        y = output.canvasy(e.y)
+        try:
+            for i in qfn.getPads():
+                box = qfn.getCanvas().bbox(i)
+                if box[0] <= x <= box[2] and box[1] <= y <= box[3]:
+
+                    print(pinNames[qfn.getPads().index(i)])
+                    name = pinNames[qfn.getPads().index(i)]
+                    statusLabel.config(text=name)
+
+        except:
+            pass
+    except:
+        pass
+    print("Mouse position: (%s %s)" % (output.canvasx(e.x), output.canvasy(e.y)))
+
+
 def moveLine(e):
     qfn = packageMemory[-1]
     outputItem = qfn.getCanvas().find_withtag("current")
@@ -863,10 +891,15 @@ def writeImage(string):
 
 
 def CMI(string):
-    if "*" in string:
+
+    if "help" in string:
+        text.insert(END, "'generate + filename' to generate diagram" + "\n")
+        text.insert(END, "eg. 'generate + hydra'" + "\n")
+
+    elif "*" in string:
         output.delete("all")
         packageMemory.append(drawBiggerQFN(string.split()[-1], 15, output, 1))
-    if "generate" in string:
+    elif "generate" in string:
         output.delete("all")
         packageMemory.append(drawQFN(string.split()[-1], 15, output))
 
@@ -935,6 +968,9 @@ yscrollbar = ttk.Scrollbar(frame, orient="vertical")
 yscrollbar.pack(side=RIGHT, fill=Y)
 yscrollbar.config(command=output.yview)
 
+statusLabel = Label(frame, text="Pin: ", anchor=W)
+statusLabel.pack(fill=X, side=BOTTOM)
+
 output.config(xscrollcommand=xscrollbar.set, yscrollcommand=yscrollbar.set)
 output.pack(side=LEFT, expand=True, fill=BOTH)
 
@@ -953,6 +989,7 @@ text.pack()
 # y1scrollbar.pack(side = RIGHT, fill = Y)
 # y1scrollbar.config(command=output.yview)
 output.bind("<B1-Motion>", moveLine)
+output.bind("<Motion>", hoverPad)
 output.bind("<ButtonRelease-1>", release)
 entry.bind("<Return>", Enter)
 
