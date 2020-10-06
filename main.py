@@ -442,7 +442,7 @@ class vQFN:
 
     def getCenterRect(self, i):
         bounds = self.canvas.bbox(i)
-        print
+
         return [(bounds[0] + bounds[2]) / 2, (bounds[1] + bounds[3]) / 2]
 
     def distance(self, i, j):
@@ -488,29 +488,36 @@ class vQFN:
                 <= min(xArray) + 50 / self.resizeFactor
             ):
                 left.append(i)
-            if (
+            elif (
                 max(xArray) - 50 / self.resizeFactor
                 <= self.getCenterRect(i)[0]
                 <= max(xArray) + 50 / self.resizeFactor
             ):
                 right.append(i)
-            if (
+            elif (
                 max(yArray) - 50 / self.resizeFactor
                 <= self.getCenterRect(i)[1]
                 <= max(yArray) + 50 / self.resizeFactor
             ):
                 top.append(i)
-            if (
+            elif (
                 min(yArray) - 50 / self.resizeFactor
                 <= self.getCenterRect(i)[1]
                 <= min(yArray) + 50 / self.resizeFactor
             ):
                 bottom.append(i)
+            else:
+                left.append(i)
 
         left = centerIterator(left)
+        print(len(left))
         bottom = centerIterator(bottom)
+        print(len(bottom))
         right = centerIterator(right)
+        print(len(right))
         top = centerIterator(top)
+        print(len(top))
+        print(len(self.getPads()))
 
         self.left = left
         self.bottom = bottom
@@ -792,15 +799,19 @@ def hoverPad(e):
                 box = qfn.getCanvas().bbox(i)
                 if box[0] <= x <= box[2] and box[1] <= y <= box[3]:
 
-                    print(pinNames[qfn.getPads().index(i)])
-                    name = pinNames[qfn.getPads().index(i)]
-                    statusLabel.config(text=name)
+                    name = (
+                        pinNames[qfn.getPads().index(i)]
+                        + "          position: "
+                        + str(output.canvasx(e.x))
+                        + ", "
+                        + str(output.canvasy(e.y))
+                    )
+                    statusLabel.config(text="Pin: " + name)
 
         except:
             pass
     except:
         pass
-    print("Mouse position: (%s %s)" % (output.canvasx(e.x), output.canvasy(e.y)))
 
 
 def moveLine(e):
