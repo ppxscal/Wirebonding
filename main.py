@@ -63,13 +63,6 @@ def onSegment(p, q, r):
 
 
 def orientation(p, q, r):
-    # to find the orientation of an ordered triplet (p,q,r)
-    # function returns the following values:
-    # 0 : Colinear points
-    # 1 : Clockwise points
-    # 2 : Counterclockwise
-
-    # for details of below formula.
 
     val = (float(q.y - p.y) * (r.x - q.x)) - (float(q.x - p.x) * (r.y - q.y))
     if val > 0:
@@ -217,6 +210,10 @@ class vQFN:
 
         self.badWires = 0
 
+        self.maxLength = 3000 / self.resizeFactor
+
+        self.minLength = 1000 / self.resizeFactor
+
     def getName(self):
         return self.string[:-4]
 
@@ -297,6 +294,13 @@ class vQFN:
 
     def getPinNames(self):
         return self.lefReader.getPinNames()
+
+    def getLengths(self):
+        return [self.minLength, self.maxLength]
+
+    def setLengths(self, a, b):
+        self.minLength = int(a) / self.resizeFactor
+        self.maxLength = int(b) / self.resizeFactor
 
     def Initialize(self):
 
@@ -456,15 +460,14 @@ class vQFN:
         # checks length requirement for chips - depends on type of wire used
 
     def checkLength(self):
+
         for i in self.wires:
             x0, y0, x1, y1 = self.canvas.coords(i)
 
             x = x0 - x1
             y = y0 - y1
 
-            if not (
-                1000 / self.resizeFactor <= math.hypot(x, y) <= 3000 / self.resizeFactor
-            ):
+            if not (self.minLength <= math.hypot(x, y) <= self.maxLength):
                 self.canvas.itemconfig(i, fill="red")
                 self.badWires += 1
 
@@ -478,6 +481,7 @@ class vQFN:
         top = []
 
         for i in self.padItems:
+
             xArray.append(self.getCenterRect(i)[0])
             yArray.append(self.getCenterRect(i)[1])
 
@@ -506,25 +510,54 @@ class vQFN:
                 <= min(yArray) + 50 / self.resizeFactor
             ):
                 bottom.append(i)
-            else:
-                left.append(i)
 
         left = centerIterator(left)
-        print(len(left))
+
         bottom = centerIterator(bottom)
-        print(len(bottom))
+
         right = centerIterator(right)
-        print(len(right))
+
         top = centerIterator(top)
-        print(len(top))
-        print(len(self.getPads()))
 
         self.left = left
         self.bottom = bottom
         self.right = right
         self.top = top
 
-        for i in left + bottom + right + top:
+        sideList = self.left + self.bottom + self.right + self.top
+
+        # need to check that all pads are wired because the algorithm leaves some unwired for some reason
+
+        for i in self.padItems:
+            if i not in sideList:
+                if (
+                    min(xArray) - 50 / self.resizeFactor
+                    <= self.getCenterRect(i)[0]
+                    <= min(xArray) + 50 / self.resizeFactor
+                ):
+                    self.left.append(i)
+                elif (
+                    max(xArray) - 50 / self.resizeFactor
+                    <= self.getCenterRect(i)[0]
+                    <= max(xArray) + 50 / self.resizeFactor
+                ):
+                    self.right.append(i)
+                elif (
+                    max(yArray) - 50 / self.resizeFactor
+                    <= self.getCenterRect(i)[1]
+                    <= max(yArray) + 50 / self.resizeFactor
+                ):
+                    self.top.append(i)
+                elif (
+                    min(yArray) - 50 / self.resizeFactor
+                    <= self.getCenterRect(i)[1]
+                    <= min(yArray) + 50 / self.resizeFactor
+                ):
+                    self.bottom.append(i)
+
+        sideList = self.left + self.bottom + self.right + self.top
+
+        for i in sideList:
             for j in self.pins:
                 self.distanceToPins.append(self.distance(i, j))
             for element in range(len(self.distanceToPins)):
@@ -708,6 +741,8 @@ def drawQFN(string, resizeFactor, canvas):
 
     qfn.adjustShift()
 
+    # qfn.checkLength()
+
     return qfn
 
 
@@ -748,6 +783,8 @@ def drawBiggerQFN(string, resizeFactor, canvas, pinRange):
     qfn.fixCrossover()
 
     qfn.adjustShift()
+
+    # qfn.checkLength()
 
     return qfn
 
@@ -903,16 +940,33 @@ def writeImage(string):
 
 def CMI(string):
 
-    if "help" in string:
-        text.insert(END, "'generate + filename' to generate diagram" + "\n")
-        text.insert(END, "eg. 'generate + hydra'" + "\n")
+    split = string.split()
 
-    elif "*" in string:
+    if "help" in split:
+        text.insert(END, "'generate <chip name>' to generate diagram" + "\n")
+        text.insert(
+            END,
+            "'* <chip name>' to automatically generate 1 extra pin for each side"
+            + "\n",
+        )
+        text.insert(
+            END,
+            "'save as <file name.filetype> to save the canvas image (svg supported)"
+            + "\n",
+        )
+        text.insert(END, "resize <scale factor (default 15)> to zoom in or out" + "\n")
+        text.insert(END, "delete <wire number>" + "\n")
+        text.insert(END, "shift <shift over number>" + "\n")
+        text.insert(END, "'check' to verify wire angles" + "\n")
+        text.insert(END, "'a' to switch wire anchor for dragging" + "\n")
+        text.insert(END, "'+ <int> to add pins to each side of the package'" + "\n")
+
+    elif "*" in split:
         output.delete("all")
-        packageMemory.append(drawBiggerQFN(string.split()[-1], 15, output, 1))
-    elif "generate" in string:
+        packageMemory.append(drawBiggerQFN(split[-1], 15, output, 1))
+    elif "generate" in split:
         output.delete("all")
-        packageMemory.append(drawQFN(string.split()[-1], 15, output))
+        packageMemory.append(drawQFN(split[-1], 15, output))
 
     elif "save as" in string:
 
@@ -920,40 +974,43 @@ def CMI(string):
             writeImage(string)
             text.insert(END, "Image saved successfully" + "\n")
         else:
-            canvasvg.saveall(
-                string.split()[-1], output, items=None, margin=10, tounicode=None
-            )
+            canvasvg.saveall(split[-1], output, items=None, margin=10, tounicode=None)
             text.insert(END, "SVG file saved successfully" + "\n")
 
-    elif "resize" in string:
+    elif "resize" in split:
         packageMemory.append(
-            drawQFN(packageMemory[-1].getName(), int(string.split()[-1]), output)
+            drawQFN(packageMemory[-1].getName(), int(split[-1]), output)
         )
-    elif "delete" in string:
+
+    elif "delete" in split:
         packageMemory[-1].getCanvas().delete(
-            packageMemory[-1].getWires()[int(string.split()[-1])]
+            packageMemory[-1].getWires()[int(split[-1])]
         )
-    elif "shift" in string:
+    elif "shift" in split:
 
-        packageMemory[-1].shiftWires(int(string.split()[-1]))
+        packageMemory[-1].shiftWires(int(split[-1]))
         packageMemory[-1].checkAngles()
 
-    elif "check" in string:
+    elif "check" in split:
         packageMemory[-1].checkAngles()
 
-    elif "a" in string:
+    elif "a" in split:
         packageMemory[-1].flipSwitch()
         text.insert(END, "Switched wire acnhor" + "\n")
 
-    elif "+" in string or "-" in string:
+    elif "+" in split or "-" in split:
         packageMemory.append(
             drawBiggerQFN(
                 packageMemory[-1].getName(),
                 packageMemory[-1].getResizeFactor(),
                 output,
-                int(string.split()[-1]),
+                int(split[-1]),
             )
         )
+    elif "wireLength" in split:
+
+        packageMemory[-1].setLengths(split[-2], split[-1])
+        packageMemory[-1].checkLength()
 
     else:
         text.insert(END, "Error: " + string + " is not a valid command" + "\n")
