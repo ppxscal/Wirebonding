@@ -327,12 +327,13 @@ class vQFN:
 
         # draws rectangle inside the chip - for reference purposes
 
+    """
     def drawInnerRect(self):
         self.canvas.create_rectangle(
             self.central[0], self.central[1], self.central[2], self.central[3]
         )
-
-        # draws the outline of the entire package
+    """
+    # draws the outline of the entire package
 
     def drawOuterRect(self):
         self.canvas.create_rectangle(
@@ -684,9 +685,9 @@ class vQFN:
 
         self.badWires = 0
         self.checkAngles()
-        # self.checkLength()
+        self.checkLength()
 
-        # fins optimized solution for shift
+        # finds optimized solution for shift
 
     def adjustShift(self):
         array = []
@@ -716,7 +717,7 @@ def drawQFN(string, resizeFactor, canvas):
     qfn.drawPaddle()
 
     # Inner Rect
-    qfn.drawInnerRect()
+    # qfn.drawInnerRect()
 
     # Mid Rect
     qfn.drawMidRect()
@@ -741,7 +742,7 @@ def drawQFN(string, resizeFactor, canvas):
 
     qfn.adjustShift()
 
-    # qfn.checkLength()
+    qfn.checkLength()
 
     return qfn
 
@@ -759,7 +760,7 @@ def drawBiggerQFN(string, resizeFactor, canvas, pinRange):
     qfn.drawPaddle()
 
     # Inner Rect
-    qfn.drawInnerRect()
+    # qfn.drawInnerRect()
 
     # Mid Rect
     qfn.drawMidRect()
@@ -784,7 +785,7 @@ def drawBiggerQFN(string, resizeFactor, canvas, pinRange):
 
     qfn.adjustShift()
 
-    # qfn.checkLength()
+    qfn.checkLength()
 
     return qfn
 
@@ -839,11 +840,11 @@ def hoverPad(e):
                     name = (
                         pinNames[qfn.getPads().index(i)]
                         + "          position: "
-                        + str(output.canvasx(e.x))
+                        + str(qfn.getCenterRect(i)[0])
                         + ", "
-                        + str(output.canvasy(e.y))
+                        + str(qfn.getCenterRect(i)[1])
                     )
-                    statusLabel.config(text="Pin: " + name)
+                    statusLabel.config(text="Pad: " + name)
 
         except:
             pass
@@ -923,7 +924,7 @@ def release(e):
                                 y1,
                             )
                 qfn.checkAngles()
-                # qfn.checkLength()
+                qfn.checkLength()
         except:
             pass
     except:
@@ -954,12 +955,14 @@ def CMI(string):
             "'save as <file name.filetype> to save the canvas image (svg supported)"
             + "\n",
         )
-        text.insert(END, "resize <scale factor (default 15)> to zoom in or out" + "\n")
-        text.insert(END, "delete <wire number>" + "\n")
-        text.insert(END, "shift <shift over number>" + "\n")
+        text.insert(
+            END, "'resize <scale factor (default 15)>' to zoom in or out" + "\n"
+        )
+        text.insert(END, "'delete <wire number>'" + "\n")
+        text.insert(END, "'shift <shift over number>'" + "\n")
         text.insert(END, "'check' to verify wire angles" + "\n")
         text.insert(END, "'a' to switch wire anchor for dragging" + "\n")
-        text.insert(END, "'+ <int> to add pins to each side of the package'" + "\n")
+        text.insert(END, "'+ <int>' to add pins to each side of the package'" + "\n")
 
     elif "*" in split:
         output.delete("all")
