@@ -214,6 +214,10 @@ class vQFN:
 
         self.minLength = 1000 / self.resizeFactor
 
+        self.recursionDepth = 0
+
+        self.maximumSideOfChip = 0
+
     def getName(self):
         return self.string[:-4]
 
@@ -301,6 +305,15 @@ class vQFN:
     def setLengths(self, a, b):
         self.minLength = int(a) / self.resizeFactor
         self.maxLength = int(b) / self.resizeFactor
+
+    def getRecursionDepth(self):
+        return self.recursionDepth
+
+    def getMaximumSideOfChip(self):
+        return self.maximumSideOfChip
+
+    def getNumberSide(self):
+        return self.numberSide
 
     def Initialize(self):
 
@@ -558,6 +571,21 @@ class vQFN:
 
         sideList = self.left + self.bottom + self.right + self.top
 
+        padLengthArray = [
+            len(self.left),
+            len(self.bottom),
+            len(self.right),
+            len(self.top),
+        ]
+
+        maximumSideOfChip = max(padLengthArray)
+
+        print(padLengthArray)
+        print(maximumSideOfChip)
+        print(self.numberSide)
+
+        self.maximumSideOfChip = maximumSideOfChip
+
         for i in sideList:
             for j in self.pins:
                 self.distanceToPins.append(self.distance(i, j))
@@ -593,10 +621,14 @@ class vQFN:
                 else:
                     self.canvas.coords(i, x0, y0, x11, y11)
                     self.canvas.coords(j, x01, y01, x1, y1)
-                    # time.sleep(0.1)
-                    self.fixCrossover()
 
-                    return
+                    if self.recursionDepth >= 900:
+                        return False
+                        break
+                    else:
+                        self.recursionDepth += 1
+                        self.fixCrossover()
+                        return True
 
     def checkCrossOver(self):
         for i in self.wires:
@@ -685,7 +717,7 @@ class vQFN:
 
         self.badWires = 0
         self.checkAngles()
-        self.checkLength()
+        # self.checkLength()
 
         # finds optimized solution for shift
 
@@ -740,11 +772,25 @@ def drawQFN(string, resizeFactor, canvas):
 
     qfn.fixCrossover()
 
-    qfn.adjustShift()
+    if not qfn.getMaximumSideOfChip() == qfn.getNumberSide():
+        print("oh noo")
+        return drawBiggerQFN(
+            string,
+            resizeFactor,
+            canvas,
+            qfn.getMaximumSideOfChip() - qfn.getNumberSide(),
+        )
 
-    qfn.checkLength()
+    elif qfn.getRecursionDepth() >= 900:
+        return drawBiggerQFN(string, resizeFactor, canvas, 1)
 
-    return qfn
+    else:
+
+        qfn.adjustShift()
+
+        # qfn.checkLength()
+
+        return qfn
 
 
 def drawBiggerQFN(string, resizeFactor, canvas, pinRange):
@@ -785,7 +831,7 @@ def drawBiggerQFN(string, resizeFactor, canvas, pinRange):
 
     qfn.adjustShift()
 
-    qfn.checkLength()
+    # qfn.checkLength()
 
     return qfn
 
@@ -924,7 +970,7 @@ def release(e):
                                 y1,
                             )
                 qfn.checkAngles()
-                qfn.checkLength()
+                # qfn.checkLength()
         except:
             pass
     except:
@@ -992,7 +1038,7 @@ def CMI(string):
     elif "shift" in split:
 
         packageMemory[-1].shiftWires(int(split[-1]))
-        packageMemory[-1].checkAngles()
+        # packageMemory[-1].checkAngles()
 
     elif "check" in split:
         packageMemory[-1].checkAngles()
